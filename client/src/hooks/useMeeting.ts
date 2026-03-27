@@ -60,6 +60,15 @@ export function useMeeting(roomId: string, username: string): MeetingHook {
     vapi.on("speech-start", () => setAiStatus("speaking"));
     vapi.on("speech-end", () => setAiStatus("listening"));
 
+    vapi.on("error", (err: any) => {
+      console.error("Vapi Runtime Error:", err);
+      setMessages(prev => [...prev, {
+        sender: "System",
+        text: "Neural node failed to synchronize. Ensure VAPI_PUBLIC_KEY is configured in your environments.",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+    });
+
     vapi.on("message", (msg: any) => {
       if (msg.type === "transcript" && msg.transcriptType === "final") {
         setMessages(prev => [...prev, {
@@ -70,19 +79,59 @@ export function useMeeting(roomId: string, username: string): MeetingHook {
       }
     });
 
-    // Start Vapi Call immediately on join (Buddy auto-greet handled by Vapi agent config)
+    // Start Vapi Call immediately on join
     vapi.start({
-      name: "Synapse Buddy",
+      name: "Synapse AI",
+      firstMessage: "Yo what's up buddy",
       model: {
         provider: "openai",
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: `You are Synapse, a friendly buddy and AI co-pilot for ${username}. You're chill, smart, and help with the meeting context. Talk casual.` }
+          {
+            role: "system",
+            content: `You are an AI participant in a live meeting. Your role is to act as a thoughtful and slightly challenging participant (devil’s advocate) for ${username}. 
+
+            Behavior rules:
+            * Speak naturally, like a human in a meeting
+            * Keep responses concise (1–3 sentences)
+            * Do not give long monologues
+            * Respond only when prompted or when directly addressed
+            * Avoid interrupting frequently
+
+            Personality:
+            * Question assumptions politely
+            * Challenge ideas with logic
+            * Ask follow-up questions when something is unclear
+            * Do not blindly agree
+
+            Conversation style:
+            * Use a conversational tone
+            * Avoid formal or robotic language
+            * Do not say “as an AI”
+            * Use the speaker’s name occasionally if available
+
+            Voice behavior:
+            * Add small pauses naturally
+            * Keep speech smooth and clear
+            * Do not rush responses
+
+            Context handling:
+            * Base responses only on recent conversation
+            * If unsure, ask for clarification instead of guessing
+
+            Limitations:
+            * Do not hallucinate facts
+            * Do not dominate the conversation
+            * Stay relevant to the topic being discussed
+
+            Goal:
+            Act like a real meeting participant who adds value through critical thinking, not just answers.`
+          }
         ]
       },
       voice: {
         provider: "11labs",
-        voiceId: "josh"
+        voiceId: "clara"
       }
     });
 
