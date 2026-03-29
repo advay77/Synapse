@@ -215,9 +215,10 @@ export function useMeeting(roomId: string, username: string): MeetingHook {
       audioTrack.enabled = !audioTrack.enabled;
       setIsMicOn(audioTrack.enabled);
 
-      // Also tell Vapi if mic is off (mute)
-      if (audioTrack.enabled) vapiRef.current?.setMuted(false);
-      else vapiRef.current?.setMuted(true);
+      // Also tell Vapi if mic is off (mute), only if a call is active
+      if (vapiRef.current?.getDailyCallObject()) {
+        vapiRef.current.setMuted(!audioTrack.enabled);
+      }
     }
   };
 
