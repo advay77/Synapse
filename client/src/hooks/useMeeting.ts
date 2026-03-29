@@ -5,7 +5,15 @@ import { io, Socket } from "socket.io-client";
 import { Peer, MediaConnection } from "peerjs";
 import Vapi from "@vapi-ai/web";
 
-const VAPI_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY || "";
+const VAPI_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY || process.env.VAPI_PUBLIC_KEY || "";
+
+if (typeof window !== "undefined") {
+  if (!VAPI_PUBLIC_KEY) {
+    console.warn("VAPI Configuration Missing: Neural node cannot synchronize without a public key.");
+  } else {
+    console.log(`VAPI Connecting with key: ${VAPI_PUBLIC_KEY.slice(0, 4)}... (Check if this matches your Vapi dashboard)`);
+  }
+}
 
 interface Participant {
   id: string;
@@ -61,10 +69,10 @@ export function useMeeting(roomId: string, username: string): MeetingHook {
     vapi.on("speech-end", () => setAiStatus("listening"));
 
     vapi.on("error", (err: any) => {
-      console.error("Vapi Runtime Error:", err);
+      console.error("Vapi Runtime Error:", JSON.stringify(err, null, 2));
       setMessages(prev => [...prev, {
         sender: "System",
-        text: "Neural node failed to synchronize. Ensure VAPI_PUBLIC_KEY is configured in your environments.",
+        text: "Neural node failed to synchronize. Ensure NEXT_PUBLIC_VAPI_PUBLIC_KEY (and optionally VAPI_PUBLIC_KEY) is configured in your client environments.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]);
     });
@@ -78,6 +86,8 @@ export function useMeeting(roomId: string, username: string): MeetingHook {
         }]);
       }
     });
+
+
 
     // Start Vapi Call immediately on join
     vapi.start({
@@ -141,14 +151,16 @@ export function useMeeting(roomId: string, username: string): MeetingHook {
         myStreamRef.current = stream;
         setStreams(prev => ({ ...prev, me: stream }));
 
-        const hostname = window.location.hostname;
-        const socket = io(`http://${hostname}:3001`);
+        const socket = io(`http://127.0.0.1:3001`, { 
+          transports: ["polling", "websocket"],
+          withCredentials: true 
+        });
         socketRef.current = socket;
-
+        
         socket.on("connect", () => {
           setMyId(socket.id);
           const peer = new Peer(socket.id as string, {
-            host: hostname,
+            host: '127.0.0.1',
             port: 3001,
             path: "/peerjs"
           });

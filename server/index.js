@@ -14,15 +14,20 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST"]
-  }
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  allowEIO3: true,
+  transports: ['polling', 'websocket']
 });
 
 // PeerServer for WebRTC signaling (Integrated with main server)
 const { ExpressPeerServer } = require('peer');
 const peerServer = ExpressPeerServer(server, {
   debug: true,
-  path: '/peerjs'
+  path: '/peerjs',
+  allow_discovery: true,
+  proxied: true
 });
 app.use('/peerjs', peerServer);
 
