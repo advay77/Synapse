@@ -29,6 +29,9 @@ export default function MeetingPage() {
     setRoomId(data.roomId);
   }, [router]);
 
+  const [isAiMuted, setIsAiMuted] = useState(false);
+  const toggleAiMute = () => setIsAiMuted(prev => !prev);
+
   const {
     myId,
     participants,
@@ -39,7 +42,6 @@ export default function MeetingPage() {
     streams,
     toggleMic,
     toggleCam,
-
     askAi
   } = useMeeting(roomId, username);
 
@@ -264,32 +266,32 @@ function VideoCard({ name, stream, isMe, isMicOn = true, isCamOn = true }: any) 
       {/* Participant Name Tag */}
       <div className="absolute bottom-6 left-6 flex items-center gap-3 px-4 py-2 rounded-2xl bg-[#0a0a0a]/60 backdrop-blur-xl border border-white/10">
         {!isMicOn && <MicOff className="w-3.5 h-3.5 text-red-500" />}
-        <span className="text-xs font-black tracking-tight text-white/90">{isMe ? "Advay" : name}</span>
+        <span className="text-xs font-black tracking-tight text-white/90">{name}</span>
       </div>
     </div>
   );
 }
 
-function AICard({ status }: { status: "listening" | "thinking" | "speaking" }) {
+function AICard({ status }: { status: "idle" | "thinking" }) {
   return (
     <div className="relative rounded-[24px] md:rounded-[32px] overflow-hidden bg-gradient-to-br from-[#121212] to-[#181818] border border-indigo-500/20 shadow-2xl aspect-video flex flex-col items-center justify-center">
       {/* Background Animation Effect */}
       <div className={cn(
         "absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(79,70,229,0.08)_0%,transparent_70%)]",
-        status === "speaking" && "animate-pulse"
+        status === "thinking" && "animate-pulse"
       )} />
 
       <div className={cn(
         "w-16 h-16 md:w-28 md:h-28 rounded-full flex items-center justify-center transition-all duration-700 relative z-10 shadow-2xl",
-        status === "speaking" ? "bg-indigo-600 shadow-[0_0_60px_rgba(79,70,229,0.3)] scale-110" : "bg-[#1c1c1c] border border-indigo-500/20",
+        status === "thinking" ? "bg-indigo-600 shadow-[0_0_60px_rgba(79,70,229,0.3)] scale-110" : "bg-[#1c1c1c] border border-indigo-500/20",
         status === "thinking" && "ai-pulse"
       )}>
         <Brain className={cn(
           "w-8 h-8 md:w-12 md:h-12 transition-all duration-500",
-          status === "speaking" ? "text-white" : "text-indigo-400"
+          status === "thinking" ? "text-white" : "text-indigo-400"
         )} />
 
-        {status === "speaking" && (
+        {status === "thinking" && (
           <div className="absolute -right-1 -bottom-1 md:-right-3 md:-bottom-3 w-8 h-8 md:w-12 md:h-12 rounded-full bg-indigo-500 border-[3px] md:border-[6px] border-[#181818] flex items-center justify-center">
             <Volume2 className="w-3 h-3 md:w-5 md:h-5 text-white" />
           </div>
@@ -300,25 +302,25 @@ function AICard({ status }: { status: "listening" | "thinking" | "speaking" }) {
         <div className="flex flex-col items-center gap-2 md:gap-4">
           <div className={cn(
             "px-3 md:px-4 py-1 md:py-1.5 rounded-full border text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 transition-all duration-500",
-            status === "speaking" ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300 shadow-[0_4px_15px_rgba(79,70,229,0.2)]" : "bg-[#1c1c1c] border-white/5 text-zinc-600"
+            status === "thinking" ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300 shadow-[0_4px_15px_rgba(79,70,229,0.2)]" : "bg-[#1c1c1c] border-white/5 text-zinc-600"
           )}>
             <div className={cn(
               "w-1 h-1 md:w-1.5 md:h-1.5 rounded-full",
-              status === "speaking" ? "bg-indigo-400 shadow-[0_0_10px_rgba(129,140,248,1)]" : "bg-zinc-700"
+              status === "thinking" ? "bg-indigo-400 shadow-[0_0_10px_rgba(129,140,248,1)]" : "bg-zinc-700"
             )} />
             Active Synapse
           </div>
 
           <div className={cn(
             "px-3 md:px-5 py-1 md:py-2 rounded-xl md:rounded-2xl border flex items-center gap-3 md:gap-4 transition-all duration-500",
-            status === "speaking" ? "bg-indigo-500/10 border-indigo-500/20" : "bg-black/20 border-white/5"
+            status === "thinking" ? "bg-indigo-500/10 border-indigo-500/20" : "bg-black/20 border-white/5"
           )}>
             <span className={cn(
               "text-[8px] md:text-xs font-black uppercase tracking-[0.3em] transition-colors duration-500",
-              status === "speaking" ? "text-indigo-200" : "text-zinc-700"
+              status === "thinking" ? "text-indigo-200" : "text-zinc-700"
             )}>{status}</span>
 
-            {status === "speaking" && (
+            {status === "thinking" && (
               <div className="flex gap-1 items-center h-3 md:h-4">
                 {[1, 2, 3, 4, 5].map(i => (
                   <div
@@ -340,10 +342,10 @@ function AICard({ status }: { status: "listening" | "thinking" | "speaking" }) {
         </div>
       </div>
 
-      {status === "speaking" && (
+      {status === "thinking" && (
         <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 md:gap-3 text-indigo-400/50 font-black italic text-[7px] md:text-[9px] tracking-widest">
           <Volume2 className="w-3 h-3 md:w-3.5 md:h-3.5" />
-          AI IS SPEAKING...
+          AI IS THINKING...
         </div>
       )}
     </div>
