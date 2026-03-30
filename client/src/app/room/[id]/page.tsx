@@ -4,8 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { 
   Mic, MicOff, Video, VideoOff, PhoneOff, Send, 
-  Sparkles, MessageSquare, Users2, LayoutGrid, Brain, 
-  Volume2, Search, MoreHorizontal
+  Sparkles, Users2, Brain, 
+  MoreHorizontal
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMeeting } from "@/hooks/useMeeting";
@@ -274,59 +274,55 @@ function VideoCard({ name, stream, isMe, isMicOn = true, isCamOn = true }: any) 
   );
 }
 
-function AICard({ status }: { status: "listening" | "thinking" | "speaking" }) {
+function AICard({ status }: { status: "idle" | "thinking" }) {
   return (
     <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-indigo-950/20 via-zinc-900 to-zinc-900 border border-indigo-500/20 shadow-2xl aspect-video flex flex-col items-center justify-center transition-all">
-       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(79,70,229,0.15)_0%,transparent_70%)] animate-pulse" />
+       <div className={cn(
+         "absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(79,70,229,0.15)_0%,transparent_70%)]",
+         status === "thinking" && "animate-pulse"
+       )} />
        
        <div className={cn(
          "w-28 h-28 rounded-full flex items-center justify-center transition-all duration-500 relative",
-         status === "speaking" ? "bg-indigo-600 shadow-[0_0_40px_rgba(79,70,229,0.4)]" : "bg-zinc-800 border border-indigo-500/30",
-         status === "thinking" && "ai-pulse"
+         status === "thinking" ? "bg-indigo-600 shadow-[0_0_40px_rgba(79,70,229,0.4)] ai-pulse" : "bg-zinc-800 border border-indigo-500/30"
        )}>
           <Brain className={cn(
             "w-12 h-12 transition-all",
-            status === "speaking" ? "text-white" : "text-indigo-400"
+            status === "thinking" ? "text-white" : "text-indigo-400"
           )} />
-          
-          {status === "speaking" && (
-            <div className="absolute -right-2 -bottom-2 w-10 h-10 rounded-full bg-indigo-500 border-4 border-[#0a0a0a] flex items-center justify-center">
-              <Volume2 className="w-4 h-4 text-white" />
-            </div>
-          )}
        </div>
 
        <div className="mt-8 text-center space-y-4 z-10">
           <div className="flex flex-col items-center gap-2">
             <div className={cn(
               "px-3 py-1 rounded-full border text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 transition-colors",
-              status === "speaking" ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300" : "bg-zinc-800 border-white/5 text-zinc-500"
+              status === "thinking" ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300" : "bg-zinc-800 border-white/5 text-zinc-500"
             )}>
               <div className={cn(
                 "w-1.5 h-1.5 rounded-full",
-                status === "speaking" ? "bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.8)]" : "bg-zinc-600"
+                status === "thinking" ? "bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.8)]" : "bg-zinc-600"
               )} />
               Active Synapse
             </div>
 
             <div className={cn(
               "px-4 py-1.5 rounded-xl border flex items-center gap-3 transition-all",
-              status === "speaking" ? "bg-indigo-500/20 border-indigo-500/30" : "bg-zinc-900/50 border-white/5"
+              status === "thinking" ? "bg-indigo-500/20 border-indigo-500/30" : "bg-zinc-900/50 border-white/5"
             )}>
                <span className={cn(
                  "text-xs font-bold uppercase tracking-[0.2em] transition-colors",
-                 status === "speaking" ? "text-indigo-200" : "text-zinc-600"
-               )}>{status}</span>
+                 status === "thinking" ? "text-indigo-200" : "text-zinc-600"
+               )}>{status === "thinking" ? "thinking" : "listening"}</span>
                
-               {status === "speaking" && (
+               {status === "thinking" && (
                  <div className="flex gap-1 items-center h-4">
-                    {[1,2,3,4].map(i => (
-                      <div 
-                        key={i} 
-                        className="w-1 bg-indigo-400 rounded-full voice-wave"
-                        style={{ height: `${20 + Math.random() * 80}%`, animationDelay: `${i * 0.15}s` }}
-                      />
-                    ))}
+                   {[1,2,3,4].map(i => (
+                     <div 
+                       key={i} 
+                       className="w-1 bg-indigo-400 rounded-full voice-wave"
+                       style={{ height: `${20 + Math.random() * 80}%`, animationDelay: `${i * 0.15}s` }}
+                     />
+                   ))}
                  </div>
                )}
             </div>
@@ -335,16 +331,14 @@ function AICard({ status }: { status: "listening" | "thinking" | "speaking" }) {
           <div className="space-y-1">
              <h3 className="text-xl font-heading font-bold text-white">AI Co-Pilot</h3>
              <p className="max-w-[280px] text-zinc-500 text-[10px] uppercase leading-relaxed font-medium tracking-tight">
-               Listening and extracting key architectural decisions from this session.
+               Ready to analyze and assist your workspace.
              </p>
           </div>
        </div>
 
-       {/* Small status bubble in corners */}
-       {status === "speaking" && (
+       {status === "thinking" && (
          <div className="absolute bottom-4 left-4 flex items-center gap-2 text-indigo-400/60 font-medium italic text-[10px]">
-           <Volume2 className="w-3 h-3" />
-           AI IS SPEAKING...
+           AI IS THINKING...
          </div>
        )}
     </div>

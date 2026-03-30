@@ -57,7 +57,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('ask-ai', async ({ roomId, message }) => {
-    // Basic text fallback for the feed if Vapi is not active or for text queries
+    // Handle AI text queries via OpenAI/OpenRouter
     io.to(roomId).emit('ai-status', 'thinking');
     try {
       const model = process.env.OPENAI_API_KEY?.startsWith('sk-or-') ? "openai/gpt-4o-mini" : "gpt-4o-mini";
