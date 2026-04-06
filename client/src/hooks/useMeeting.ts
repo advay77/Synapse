@@ -141,6 +141,9 @@ export function useMeeting(roomId: string, username: string, isAiMuted: boolean 
       videoTrack.enabled = !videoTrack.enabled;
       setIsCamOn(videoTrack.enabled);
     }
+    else {
+      console.error("No video track found");
+    }
   };
 
   const askAi = (msg: string) => {
