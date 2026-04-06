@@ -29,7 +29,7 @@ interface MeetingHook {
   askAi: (msg: string) => void;
 }
 
-export function useMeeting(roomId: string, username: string): MeetingHook {
+export function useMeeting(roomId: string, username: string, isAiMuted: boolean = false): MeetingHook {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [aiStatus, setAiStatus] = useState<"idle" | "thinking">("idle");
@@ -41,6 +41,21 @@ export function useMeeting(roomId: string, username: string): MeetingHook {
   const socketRef = useRef<Socket | null>(null);
   const peerRef = useRef<Peer | null>(null);
   const myStreamRef = useRef<MediaStream | null>(null);
+
+  const speak = (text: string) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window) || isAiMuted) return;
+    window.speechSynthesis.cancel(); // Stop any current speech
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    // Choose a high-quality voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const premiumVoice = voices.find(v => v.name.includes("Google") || v.name.includes("Natural") || v.name.includes("Premium"));
+    if (premiumVoice) utterance.voice = premiumVoice;
+
+    utterance.rate = 1.0;
+    utterance.pitch = 1.1; // Slightly higher pitch for a friendly AI feel
+    window.speechSynthesis.speak(utterance);
+  };
 
   useEffect(() => {
     if (typeof window === "undefined" || !navigator.mediaDevices || !roomId) return;
@@ -101,6 +116,7 @@ export function useMeeting(roomId: string, username: string): MeetingHook {
             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
           }]);
           setAiStatus("idle");
+          speak(text);
         });
       });
 

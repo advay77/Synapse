@@ -43,7 +43,7 @@ export default function MeetingPage() {
     toggleMic,
     toggleCam,
     askAi
-  } = useMeeting(roomId, username);
+  } = useMeeting(roomId, username, isAiMuted);
 
   useEffect(() => {
     if (scrollRef.current) {
