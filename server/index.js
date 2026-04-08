@@ -1,101 +1,122 @@
+// Load env first — before any other imports
+require('dotenv').config();
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const { PeerServer } = require('peer');
+const { ExpressPeerServer } = require('peer'); // Only import what we use
 const cors = require('cors');
-const OpenAI = require('openai');
-require('dotenv').config();
 
+// ─── App & Server Setup ────────────────────────────────────────────────────
 const app = express();
-app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:3000",
-  credentials: true
-}));
-app.use(express.json());
-
 const server = http.createServer(app);
+
+const ALLOWED_ORIGIN = process.env.CLIENT_URL || 'http://localhost:3000';
+
+app.use(cors({ origin: ALLOWED_ORIGIN, credentials: true }));
+app.use(express.json({ limit: '50kb' })); // Limit payload size
+
+// Health check — required by Render to detect the service is alive fast
+app.get('/health', (_req, res) => res.status(200).send('OK'));
+
+// ─── Socket.io Setup ──────────────────────────────────────────────────────
 const io = new Server(server, {
-  cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
-    methods: ["GET", "POST"],
-    credentials: true
-  },
-  allowEIO3: true,
-  transports: ['polling', 'websocket']
+  cors: { origin: ALLOWED_ORIGIN, methods: ['GET', 'POST'], credentials: true },
+  transports: ['websocket', 'polling'], // websocket first = faster handshake
+  pingTimeout: 20000,
+  pingInterval: 10000,
+  upgradeTimeout: 5000,
 });
 
-// PeerServer for WebRTC signaling (Integrated with main server)
-const { ExpressPeerServer } = require('peer');
+// ─── PeerJS Signaling ─────────────────────────────────────────────────────
 const peerServer = ExpressPeerServer(server, {
-  debug: true,
+  debug: false,        // Was true — this was flooding logs and slowing boot
   path: '/peerjs',
-  allow_discovery: true,
-  proxied: true
+  proxied: true,
+  allow_discovery: false, // Disable network peer scanning on startup
 });
 app.use('/peerjs', peerServer);
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'your-key-here',
-  baseURL: process.env.OPENAI_BASE_URL || (process.env.OPENAI_API_KEY?.startsWith('sk-or-') ? "https://openrouter.ai/api/v1" : undefined),
-});
+// ─── Lazy OpenAI Init (only created on first AI request) ─────────────────
+let openaiClient = null;
+function getOpenAI() {
+  if (!openaiClient) {
+    const OpenAI = require('openai');
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: process.env.OPENAI_API_KEY?.startsWith('sk-or-')
+        ? 'https://openrouter.ai/api/v1'
+        : undefined,
+    });
+  }
+  return openaiClient;
+}
 
-// Store user data in memory (since no DB as per constraints)
-const rooms = {}; // roomID -> Array of users { id, name, isAI: false }
+// ─── Room Store ───────────────────────────────────────────────────────────
+const rooms = new Map(); // Use Map for O(1) lookups vs plain object
 
+// ─── Socket Events ────────────────────────────────────────────────────────
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-
   socket.on('join-room', ({ roomId, username }) => {
     socket.join(roomId);
-    if (!rooms[roomId]) rooms[roomId] = [];
-    const newUser = { id: socket.id, name: username, isAI: false };
-    rooms[roomId].push(newUser);
-    io.to(roomId).emit('room-users', rooms[roomId]);
+    if (!rooms.has(roomId)) rooms.set(roomId, []);
+    const users = rooms.get(roomId);
+    users.push({ id: socket.id, name: username, isAI: false });
+    io.to(roomId).emit('room-users', users);
     socket.to(roomId).emit('user-joined', { userId: socket.id, username });
-    console.log(`${username} joined room: ${roomId}`);
   });
 
   socket.on('ask-ai', async ({ roomId, message }) => {
-    // Handle AI text queries via OpenAI/OpenRouter
     io.to(roomId).emit('ai-status', 'thinking');
     try {
-      const model = process.env.OPENAI_API_KEY?.startsWith('sk-or-') ? "openai/gpt-4o-mini" : "gpt-4o-mini";
-      const completion = await openai.chat.completions.create({
-        messages: [{ role: "user", content: message }],
-        model: model,
+      const model = process.env.OPENAI_API_KEY?.startsWith('sk-or-')
+        ? 'openai/gpt-4o-mini'
+        : 'gpt-4o-mini';
+      const completion = await getOpenAI().chat.completions.create({
+        model,
+        messages: [{ role: 'user', content: message }],
+        max_tokens: 300, // Cap tokens to speed up AI response
       });
-      io.to(roomId).emit('ai-response', { text: completion.choices[0].message.content, audio: null });
-      io.to(roomId).emit('ai-status', 'listening');
+      const text = completion.choices[0].message.content;
+      io.to(roomId).emit('ai-response', { text });
     } catch (err) {
-      console.error('AI Error:', err);
+      console.error('AI Error:', err.message);
+    } finally {
       io.to(roomId).emit('ai-status', 'listening');
     }
   });
 
   socket.on('disconnecting', () => {
-    socket.rooms.forEach(roomId => {
-      if (rooms[roomId]) {
-        rooms[roomId] = rooms[roomId].filter(u => u.id !== socket.id);
-        io.to(roomId).emit('room-users', rooms[roomId]);
+    for (const roomId of socket.rooms) {
+      if (rooms.has(roomId)) {
+        const updated = rooms.get(roomId).filter(u => u.id !== socket.id);
+        if (updated.length === 0) {
+          rooms.delete(roomId); // Clean up empty rooms from memory
+        } else {
+          rooms.set(roomId, updated);
+        }
+        io.to(roomId).emit('room-users', updated);
       }
-    });
+    }
   });
 
   socket.on('leave-room', (roomId) => {
     socket.leave(roomId);
-    if (rooms[roomId]) {
-      rooms[roomId] = rooms[roomId].filter(u => u.id !== socket.id);
-      io.to(roomId).emit('room-users', rooms[roomId]);
+    if (rooms.has(roomId)) {
+      const updated = rooms.get(roomId).filter(u => u.id !== socket.id);
+      rooms.set(roomId, updated);
+      io.to(roomId).emit('room-users', updated);
     }
-  });
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
   });
 });
 
+// ─── Start Server ─────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Synapse server ready on port ${PORT}`);
+});
+
+// Graceful shutdown (important for Render/cloud platforms)
+process.on('SIGTERM', () => {
+  server.close(() => process.exit(0));
 });
