@@ -39,6 +39,7 @@ export default function MeetingPage() {
     aiStatus,
     isMicOn,
     isCamOn,
+    isListening,
     streams,
     toggleMic,
     toggleCam,
@@ -184,7 +185,16 @@ export default function MeetingPage() {
       </div>
 
       {/* Control Bar: Floating Style */}
-      <div className="h-auto py-6 md:py-0 md:h-28 px-4 md:px-12 flex items-center justify-center bg-[#0a0a0a] border-t border-white/5 relative z-20">
+      <div className="h-auto py-6 md:py-0 md:h-28 px-4 md:px-12 flex flex-col items-center justify-center gap-2 bg-[#0a0a0a] border-t border-white/5 relative z-20">
+        {isListening && (
+          <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-indigo-400/60">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-indigo-500" />
+            </span>
+            Say &ldquo;Hey Synapse&rdquo; to ask AI
+          </div>
+        )}
         <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4 bg-[#121212] p-3 md:p-2.5 rounded-[20px] md:rounded-[24px] border border-white/5 shadow-2xl">
           <ControlButton
             active={isMicOn}
