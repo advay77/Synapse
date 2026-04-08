@@ -275,77 +275,35 @@ function VideoCard({ name, stream, isMe, isMicOn = true, isCamOn = true }: any) 
 function AICard({ status }: { status: "idle" | "thinking" }) {
   return (
     <div className="relative rounded-[24px] md:rounded-[32px] overflow-hidden bg-gradient-to-br from-[#121212] to-[#181818] border border-indigo-500/20 shadow-2xl aspect-video flex flex-col items-center justify-center">
-      {/* Background Animation Effect */}
       <div className={cn(
         "absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(79,70,229,0.08)_0%,transparent_70%)]",
         status === "thinking" && "animate-pulse"
       )} />
-
       <div className={cn(
-        "w-16 h-16 md:w-28 md:h-28 rounded-full flex items-center justify-center transition-all duration-700 relative z-10 shadow-2xl",
-        status === "thinking" ? "bg-indigo-600 shadow-[0_0_60px_rgba(79,70,229,0.3)] scale-110" : "bg-[#1c1c1c] border border-indigo-500/20",
-        status === "thinking" && "ai-pulse"
+        "w-16 h-16 md:w-28 md:h-28 rounded-2xl md:rounded-3xl flex items-center justify-center transition-all duration-700 relative z-10 shadow-2xl font-black text-3xl md:text-5xl",
+        status === "thinking"
+          ? "bg-indigo-600 shadow-[0_0_60px_rgba(79,70,229,0.4)] scale-110 text-white"
+          : "bg-[#1c1c1c] border border-indigo-500/20 text-indigo-400"
       )}>
-        <Brain className={cn(
-          "w-8 h-8 md:w-12 md:h-12 transition-all duration-500",
-          status === "thinking" ? "text-white" : "text-indigo-400"
-        )} />
-
+        S
         {status === "thinking" && (
-          <div className="absolute -right-1 -bottom-1 md:-right-3 md:-bottom-3 w-8 h-8 md:w-12 md:h-12 rounded-full bg-indigo-500 border-[3px] md:border-[6px] border-[#181818] flex items-center justify-center">
-            <Volume2 className="w-3 h-3 md:w-5 md:h-5 text-white" />
+          <div className="absolute -right-1 -bottom-1 md:-right-3 md:-bottom-3 w-6 h-6 md:w-10 md:h-10 rounded-full bg-indigo-500 border-[3px] md:border-4 border-[#181818] flex items-center justify-center">
+            <Volume2 className="w-3 h-3 md:w-4 md:h-4 text-white" />
           </div>
         )}
       </div>
-
-      <div className="mt-6 md:mt-10 text-center space-y-2 md:space-y-4 z-10">
-        <div className="flex flex-col items-center gap-2 md:gap-4">
-          <div className={cn(
-            "px-3 md:px-4 py-1 md:py-1.5 rounded-full border text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 transition-all duration-500",
-            status === "thinking" ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300 shadow-[0_4px_15px_rgba(79,70,229,0.2)]" : "bg-[#1c1c1c] border-white/5 text-zinc-600"
-          )}>
-            <div className={cn(
-              "w-1 h-1 md:w-1.5 md:h-1.5 rounded-full",
-              status === "thinking" ? "bg-indigo-400 shadow-[0_0_10px_rgba(129,140,248,1)]" : "bg-zinc-700"
-            )} />
-            Active Synapse
-          </div>
-
-          <div className={cn(
-            "px-3 md:px-5 py-1 md:py-2 rounded-xl md:rounded-2xl border flex items-center gap-3 md:gap-4 transition-all duration-500",
-            status === "thinking" ? "bg-indigo-500/10 border-indigo-500/20" : "bg-black/20 border-white/5"
-          )}>
-            <span className={cn(
-              "text-[8px] md:text-xs font-black uppercase tracking-[0.3em] transition-colors duration-500",
-              status === "thinking" ? "text-indigo-200" : "text-zinc-700"
-            )}>{status}</span>
-
-            {status === "thinking" && (
-              <div className="flex gap-1 items-center h-3 md:h-4">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <div
-                    key={i}
-                    className="w-0.5 md:w-1 bg-indigo-400 rounded-full voice-wave"
-                    style={{ height: `${20 + Math.random() * 80}%`, animationDelay: `${i * 0.1}s` }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-1 md:space-y-1.5">
-          <h3 className="text-lg md:text-2xl font-heading font-black text-white tracking-tight">AI Co-Pilot</h3>
-          <p className="max-w-[200px] md:max-w-[300px] text-zinc-600 text-[8px] md:text-[10px] uppercase leading-relaxed font-bold tracking-widest px-4">
-            Listening and buddying up for your workspace.
-          </p>
-        </div>
-      </div>
-
+      <p className="mt-5 md:mt-8 z-10 font-black text-base md:text-xl tracking-tight text-white/80">
+        Synapse
+      </p>
       {status === "thinking" && (
-        <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 md:gap-3 text-indigo-400/50 font-black italic text-[7px] md:text-[9px] tracking-widest">
-          <Volume2 className="w-3 h-3 md:w-3.5 md:h-3.5" />
-          AI IS THINKING...
+        <div className="mt-3 flex gap-1 items-center h-4 z-10">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div
+              key={i}
+              className="w-0.5 md:w-1 bg-indigo-400 rounded-full voice-wave"
+              style={{ height: `${20 + Math.random() * 80}%`, animationDelay: `${i * 0.1}s` }}
+            />
+          ))}
         </div>
       )}
     </div>
